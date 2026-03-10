@@ -357,7 +357,7 @@ sketch
 
 ### VisualStudioCode ###
 .vscode/*
-!.vscode/settings.json
+# !.vscode/settings.json # removed to allow for custom/local settings
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
