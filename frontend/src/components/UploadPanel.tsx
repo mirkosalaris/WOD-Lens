@@ -16,15 +16,18 @@ const UploadPanel: React.FC<Props> = ({ onUploadSuccess }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    console.log('File selected:', file.name, file.size, file.type);
     setLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
       const res = await uploadExcel(file);
+      console.log('File upload response:', res);
       setSuccess(res.message);
       onUploadSuccess();
     } catch (err: any) {
+      console.error('File upload error:', err);
       setError(err.response?.data?.detail || 'Error uploading file');
     } finally {
       setLoading(false);
@@ -35,15 +38,18 @@ const UploadPanel: React.FC<Props> = ({ onUploadSuccess }) => {
     e.preventDefault();
     if (!sheetUrl) return;
 
+    console.log('Submitting Google Sheets URL:', sheetUrl);
     setLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
       const res = await uploadUrl(sheetUrl);
+      console.log('URL upload response:', res);
       setSuccess(res.message);
       onUploadSuccess();
     } catch (err: any) {
+      console.error('URL upload error:', err);
       setError(err.response?.data?.detail || 'Error loading Google Sheet');
     } finally {
       setLoading(false);
