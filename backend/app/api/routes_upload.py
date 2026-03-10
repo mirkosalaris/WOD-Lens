@@ -21,8 +21,12 @@ async def upload_file(file: UploadFile = File(...)):
     try:
         content = await file.read()
         global uploaded_workouts
-        uploaded_workouts = ExcelLoader.load_from_bytes(content, file.filename)
-        return {"message": f"Successfully parsed {len(uploaded_workouts)} workouts.", "count": len(uploaded_workouts)}
+        uploaded_workouts, failed_count = ExcelLoader.load_from_bytes(content, file.filename)
+        return {
+            "message": f"Parsed {len(uploaded_workouts)} workouts. {failed_count} rows skipped due to errors.",
+            "count": len(uploaded_workouts),
+            "failed_count": failed_count
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error parsing file: {str(e)}")
 
@@ -30,8 +34,12 @@ async def upload_file(file: UploadFile = File(...)):
 async def upload_url(data: UrlUpload):
     try:
         global uploaded_workouts
-        uploaded_workouts = GoogleSheetsLoader.load_from_url(data.url)
-        return {"message": f"Successfully parsed {len(uploaded_workouts)} workouts from URL.", "count": len(uploaded_workouts)}
+        uploaded_workouts, failed_count = GoogleSheetsLoader.load_from_url(data.url)
+        return {
+            "message": f"Parsed {len(uploaded_workouts)} workouts from URL. {failed_count} rows skipped due to errors.",
+            "count": len(uploaded_workouts),
+            "failed_count": failed_count
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error parsing Google Sheet: {str(e)}")
 

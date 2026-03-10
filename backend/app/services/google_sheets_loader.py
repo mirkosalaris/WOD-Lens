@@ -1,16 +1,13 @@
 import pandas as pd
-from typing import List
+from typing import List, Tuple
 import re
 from app.models.workout import Workout
 from app.services.base_loader import BaseLoader
 
 class GoogleSheetsLoader(BaseLoader):
     @staticmethod
-    def load_from_url(url: str) -> List[Workout]:
+    def load_from_url(url: str) -> Tuple[List[Workout], int]:
         # Convert a standard Google Sheets URL to a CSV export URL
-        # Example: https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit#gid=0
-        # To: https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/export?format=csv
-        
         spreadsheet_id_match = re.search(r"/d/([a-zA-Z0-9-_]+)", url)
         if not spreadsheet_id_match:
             raise ValueError("Invalid Google Sheets URL")
