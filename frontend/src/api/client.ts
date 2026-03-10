@@ -14,6 +14,11 @@ export const uploadExcel = async (file: File) => {
   return response.data;
 };
 
+export const uploadUrl = async (url: str) => {
+  const response = await axios.post(`${API_BASE}/upload-url`, { url });
+  return response.data;
+};
+
 export const getAnalysis = async (): Promise<CapacityProfile> => {
   const response = await axios.get(`${API_BASE}/analysis`);
   return response.data;
