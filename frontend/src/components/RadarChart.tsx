@@ -6,6 +6,7 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   ResponsiveContainer,
+  Customized,
 } from 'recharts';
 import { CapacityProfile } from '../types/capacity';
 
@@ -96,6 +97,18 @@ const RadarChart: React.FC<Props> = ({ data, title }) => {
     return { points: points.join(' '), value };
   }, [mouseRadius, chartData.length, maxScale]);
 
+  // Custom component to define the clip path using Recharts internal coordinates
+  const RenderClipPath = (props: any) => {
+    const { cx, cy, outerRadius } = props;
+    return (
+      <defs>
+        <clipPath id="radarClip">
+          <circle cx={cx} cy={cy} r={outerRadius} />
+        </clipPath>
+      </defs>
+    );
+  };
+
   return (
     <div className="flex flex-col items-center w-full">
       {title && <h3 className="text-lg font-semibold mb-2">{title}</h3>}
@@ -107,15 +120,21 @@ const RadarChart: React.FC<Props> = ({ data, title }) => {
       >
         <ResponsiveContainer width="100%" height="100%">
           <ReRadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
+            <Customized component={RenderClipPath} />
             <PolarGrid />
             <PolarAngleAxis dataKey="subject" />
-            <PolarRadiusAxis angle={30} domain={[0, maxScale]} />
+            <PolarRadiusAxis 
+              angle={30} 
+              domain={[0, maxScale]} 
+              allowDataOverflow={true}
+            />
             <Radar
               name="Athlete"
               dataKey="value"
               stroke="#2563eb"
               fill="#3b82f6"
               fillOpacity={0.6}
+              style={{ clipPath: 'url(#radarClip)' }}
             />
           </ReRadarChart>
         </ResponsiveContainer>
