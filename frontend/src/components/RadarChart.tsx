@@ -24,6 +24,7 @@ const RadarChart: React.FC<Props> = ({ data, title }) => {
   const [maxScale, setMaxScale] = useState(60);
   const [mouseRadius, setMouseRadius] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const chartId = useMemo(() => `radar-clip-${Math.random().toString(36).substr(2, 9)}`, []);
 
   const chartData = useMemo(() => {
     if (Array.isArray(data)) return data;
@@ -99,11 +100,40 @@ const RadarChart: React.FC<Props> = ({ data, title }) => {
 
   // Custom component to define the clip path using Recharts internal coordinates
   const RenderClipPath = (props: any) => {
-    const { cx, cy, outerRadius } = props;
+    const { cx, cy, outerRadius, width, height } = props;
+    
+    // Safety check and parsing for percentage strings
+    const parseCoord = (val: any, size: number) => {
+      if (typeof val === 'string' && val.endsWith('%')) {
+        return (parseFloat(val) / 100) * size;
+      }
+      return typeof val === 'number' ? val : 0;
+    };
+
+    const centerX = parseCoord(cx, width);
+    const centerY = parseCoord(cy, height);
+    const radius = typeof outerRadius === 'string' && outerRadius.endsWith('%')
+      ? (parseFloat(outerRadius) / 100) * (Math.min(width, height) / 2)
+      : (typeof outerRadius === 'number' ? outerRadius : 0);
+
+    if (radius <= 0) return null;
+
+    const numPoints = chartData.length;
+    const points = [];
+    const angleStep = (2 * Math.PI) / numPoints;
+    const startAngle = -Math.PI / 2;
+
+    for (let i = 0; i < numPoints; i++) {
+      const angle = startAngle + i * angleStep;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+      points.push(`${x},${y}`);
+    }
+
     return (
       <defs>
-        <clipPath id="radarClip">
-          <circle cx={cx} cy={cy} r={outerRadius} />
+        <clipPath id={chartId}>
+          <polygon points={points.join(' ')} />
         </clipPath>
       </defs>
     );
@@ -127,6 +157,8 @@ const RadarChart: React.FC<Props> = ({ data, title }) => {
               angle={30} 
               domain={[0, maxScale]} 
               allowDataOverflow={true}
+              axisLine={false}
+              tick={true}
             />
             <Radar
               name="Athlete"
@@ -134,7 +166,9 @@ const RadarChart: React.FC<Props> = ({ data, title }) => {
               stroke="#2563eb"
               fill="#3b82f6"
               fillOpacity={0.6}
-              style={{ clipPath: 'url(#radarClip)' }}
+              isAnimationActive={false} // Disable animation to prevent clipping issues during transition
+              className="radar-path"
+              style={{ clipPath: `url(#${chartId})` }}
             />
           </ReRadarChart>
         </ResponsiveContainer>
