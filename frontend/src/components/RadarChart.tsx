@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   Radar,
   RadarChart as ReRadarChart,
@@ -21,6 +21,8 @@ interface Props {
 
 const RadarChart: React.FC<Props> = ({ data, title }) => {
   const [maxScale, setMaxScale] = useState(60);
+  const [mouseRadius, setMouseRadius] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const chartData = useMemo(() => {
     if (Array.isArray(data)) return data;
@@ -39,10 +41,61 @@ const RadarChart: React.FC<Props> = ({ data, title }) => {
     ];
   }, [data]);
 
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    
+    // Mouse position relative to the container's top-left
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    
+    const dx = mx - cx;
+    const dy = my - cy;
+    const radius = Math.sqrt(dx * dx + dy * dy);
+    
+    // Only show if within reasonable bounds (within the chart area)
+    const maxAllowedRadius = Math.min(rect.width, rect.height) * 0.45;
+    if (radius < maxAllowedRadius) {
+      setMouseRadius(radius);
+    } else {
+      setMouseRadius(null);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setMouseRadius(null);
+  };
+
+  const guidePoints = useMemo(() => {
+    if (mouseRadius === null) return '';
+    
+    const numPoints = chartData.length;
+    const points = [];
+    const angleStep = (2 * Math.PI) / numPoints;
+    const startAngle = -Math.PI / 2;
+
+    for (let i = 0; i < numPoints; i++) {
+      const angle = startAngle + i * angleStep;
+      const x = mouseRadius * Math.cos(angle);
+      const y = mouseRadius * Math.sin(angle);
+      points.push(`${x},${y}`);
+    }
+    
+    return points.join(' ');
+  }, [mouseRadius, chartData.length]);
+
   return (
     <div className="flex flex-col items-center w-full">
       {title && <h3 className="text-lg font-semibold mb-2">{title}</h3>}
-      <div className="w-full h-80 sm:h-[500px]">
+      <div 
+        ref={containerRef}
+        className="relative w-full h-80 sm:h-[500px]"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <ReRadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
             <PolarGrid />
@@ -57,6 +110,24 @@ const RadarChart: React.FC<Props> = ({ data, title }) => {
             />
           </ReRadarChart>
         </ResponsiveContainer>
+        
+        {mouseRadius !== null && containerRef.current && (
+          <svg 
+            className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-visible"
+            style={{ zIndex: 10 }}
+          >
+            <g transform={`translate(${containerRef.current.offsetWidth / 2}, ${containerRef.current.offsetHeight / 2})`}>
+              <polygon
+                points={guidePoints}
+                fill="none"
+                stroke="#ef4444"
+                strokeWidth="1"
+                strokeDasharray="4 2"
+                className="opacity-70"
+              />
+            </g>
+          </svg>
+        )}
       </div>
       
       <div className="w-full max-w-xs mt-4 px-4">
