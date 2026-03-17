@@ -70,7 +70,7 @@ const RadarChart: React.FC<Props> = ({ data, title }) => {
   };
 
   const guidePoints = useMemo(() => {
-    if (mouseRadius === null) return '';
+    if (mouseRadius === null) return { points: '', value: 0 };
     
     const numPoints = chartData.length;
     const points = [];
@@ -84,8 +84,17 @@ const RadarChart: React.FC<Props> = ({ data, title }) => {
       points.push(`${x},${y}`);
     }
     
-    return points.join(' ');
-  }, [mouseRadius, chartData.length]);
+    // Calculate the value based on the mouse radius
+    // Recharts outerRadius="80%" means 80% of min(width, height) / 2 = 0.4 * min(width, height)
+    let value = 0;
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const chartMaxRadius = Math.min(rect.width, rect.height) * 0.4;
+      value = (mouseRadius / chartMaxRadius) * maxScale;
+    }
+
+    return { points: points.join(' '), value };
+  }, [mouseRadius, chartData.length, maxScale]);
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -118,13 +127,22 @@ const RadarChart: React.FC<Props> = ({ data, title }) => {
           >
             <g transform={`translate(${containerRef.current.offsetWidth / 2}, ${containerRef.current.offsetHeight / 2})`}>
               <polygon
-                points={guidePoints}
+                points={guidePoints.points}
                 fill="none"
                 stroke="#ef4444"
                 strokeWidth="1"
                 strokeDasharray="4 2"
                 className="opacity-70"
               />
+              <text
+                x="0"
+                y={-mouseRadius - 10}
+                textAnchor="middle"
+                fill="#ef4444"
+                className="text-xs font-bold"
+              >
+                {guidePoints.value.toFixed(1)}%
+              </text>
             </g>
           </svg>
         )}
